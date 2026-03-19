@@ -4,6 +4,8 @@ import { CommonModule } from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card'; // <-- New
+import { MatListModule } from '@angular/material/list'; // <-- New
 
 @NgModule({
   declarations: [],
@@ -12,11 +14,15 @@ import { MatIconModule } from '@angular/material/icon';
     MatToolbarModule,
     MatButtonModule,
     MatIconModule,
+    MatCardModule, // <-- New
+    MatListModule, // <-- New
   ],
   exports: [
     MatToolbarModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    MatCardModule, // <-- New
+    MatListModule, // <-- New
   ]
 })
 export class MaterialModule { }
