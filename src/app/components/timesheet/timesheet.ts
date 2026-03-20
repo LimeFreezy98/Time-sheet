@@ -25,6 +25,8 @@ export class Timesheet implements OnInit {
   employees: Employee[] = [];
   employeeId = 0;
 
+  weekdays: string[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']; 
+
   constructor(
     private departmentsService: DepartmentsService,
     private route: ActivatedRoute
@@ -46,6 +48,13 @@ export class Timesheet implements OnInit {
             departmentId: this.department?.id, // Note the use of the ? operator
             name: this.employeeNameFC.value,
             payRate: Math.floor(Math.random() * 50) + 50, // Assigns a random pay rate
+            monday: 0,
+            tuesday: 0,
+            wednesday: 0,
+            thursday: 0,
+            friday: 0,
+            saturday: 0,
+            sunday: 0
         });
 
         // Clear the input field after successful submission
@@ -68,4 +77,15 @@ export class Timesheet implements OnInit {
         return error; // Returns {duplicate: true} on failure, or null on success
     };
   }
+
+  getTotalHours(employee: Employee): number {
+    return employee.monday + employee.tuesday + employee.wednesday
+        + employee.thursday + employee.friday + employee.saturday + employee.sunday;
+}
+
+deleteEmployee(index: number): void {
+  this.employees.splice(index, 1);
+}
+
+
 }
