@@ -4,6 +4,7 @@ import { Department } from '../../interfaces/department';
 import { CommonModule } from '@angular/common';
 import { MaterialModule } from '../../modules/material-module.js';
 import { Router } from '@angular/router';
+import { Observable } from 'rxjs';
 
 
 @Component({
@@ -13,19 +14,23 @@ import { Router } from '@angular/router';
   templateUrl: './departments.html',
   styleUrls: ['./departments.scss']
 })
+
 export class Departments implements OnInit {
-  departments!: Department[];
-  department?: Department;
+  // departments!: Department[];
+  $departments!: Observable<Department[]>;
 
   constructor(private departmentsService: DepartmentsService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
-    this.departmentsService.getDepartments().subscribe(departments => {
-      this.departments = departments;
-    });
+    // this.departmentsService.getDepartments().subscribe(departments => {
+    //   this.departments = departments;
+    // });
+
+    this.$departments = this.departmentsService.getDepartments();
   }
+
 
    
   goToDepartment(departmentId: string): void {
