@@ -7,7 +7,7 @@ import {Employee} from '../../interfaces/employee';
 import {AsyncPipe, JsonPipe, TitleCasePipe} from '@angular/common';
 import { FormControl, ValidatorFn, AbstractControl } from '@angular/forms';
 import {EmployeeService} from '../../services/employee';
-import {Observable, map} from 'rxjs';
+import {Observable, map, switchMap, tap} from 'rxjs';
 import {toSignal} from '@angular/core/rxjs-interop';
 @Component({
   selector: 'app-timesheet',
@@ -20,7 +20,6 @@ export class Timesheet implements OnInit {
   $departments: Observable<Department[]> | undefined;
   // This will hold the observable stream for JUST THE CURRENT department
   $department: Observable<Department | undefined> | undefined;
-  // Employees signal for template consumption (no BehaviorSubject, no manual subscribe)
   employees: WritableSignal<Employee[]> = signal<Employee[]>([]);
   employeeNameFC = new FormControl('', this.nameValidator()); // <-- Validator applied
   weekdays: string[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']; // <-- New
@@ -33,22 +32,26 @@ export class Timesheet implements OnInit {
   // Read departmentId once from the route
   private departmentId: string = this.route.snapshot.params['id'] as string;
 
-  // Read employees for this department from the server as a signal (no manual subscribe/effect)
-  private employeesFromServer: Signal<Employee[]> = toSignal(
-    this.employeeService.getEmployeeHoursByDepartment(this.departmentId),
-    { initialValue: [] }
-  );
   ngOnInit(): void {
+    // Get departments stream for template usage
     this.$departments = this.departmentsService.getDepartments();
     const departmentId = this.departmentId;
 
+    // Derive the single department observable for the heading
     this.$department = this.$departments.pipe(
       map(departments => departments.find(dept => dept.id === departmentId))
     );
 
-    // Seed our writable signal from the server data once (no manual subscribe/effect)
-    const fromDb = this.employeesFromServer();
-    this.employees.set(Array.isArray(fromDb) ? fromDb : []);
+    // Subscribe to departments first, then switch to employee hours for this department
+    this.departmentsService.getDepartments().pipe(
+      tap(() => {
+        // department is already derived above; no-op here besides ensuring sequence
+      }),
+      switchMap(() => this.employeeService.getEmployeeHoursByDepartment(departmentId)),
+      tap((employees: Employee[]) => {
+        this.employees.set(employees || []);
+      })
+    ).subscribe();
   }
   addEmployee(): void {
     const rawName = (this.employeeNameFC.value || '').toString().trim();
@@ -121,14 +124,16 @@ export class Timesheet implements OnInit {
     }
 
     try {
-      const savePromises = list.map(emp => this.employeeService.saveEmployeeHours(emp));
-      await Promise.all(savePromises);
+      const ops = list.map(emp =>
+        emp.id ? this.employeeService.saveEmployeeHours(emp) : this.employeeService.saveEmployeeHours(emp)
+      );
+      await Promise.all(ops);
       // Navigate back to the departments page after successful saves
       await this.router.navigate(['./departments']);
     } catch (err) {
-      console.error('Error saving employee hours', err);
+      console.error('Error saving/updating employee hours', err);
       // Basic user feedback; in a real app, swap for a snackbar/toast service
-      alert('Failed to save employee hours. Please try again.');
+      alert('Failed to submit employee hours. Please try again.');
     } finally {
       // updating anything here will happen after success or failure like a save
     }

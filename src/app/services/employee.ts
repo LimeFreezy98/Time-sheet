@@ -1,8 +1,8 @@
 import { inject, Injectable, EnvironmentInjector, runInInjectionContext } from '@angular/core';
 import { Employee } from '../interfaces/employee';
-import { Observable, defer, from, map } from 'rxjs';
+import { Observable, defer, from, map, of } from 'rxjs';
 // AngularFire Firestore APIs (avoid mixing with raw Web SDK)
-import { Firestore, collection, addDoc, query, where, getDocs } from '@angular/fire/firestore';
+import { Firestore, collection, addDoc, query, where, collectionData } from '@angular/fire/firestore';
 
 /**
  * Service for handling all Employee data interactions with Cloud Firestore.
@@ -35,15 +35,13 @@ export class EmployeeService {
     });
   }
 
-  getEmployeeHoursByDepartment(departmentId: string): Observable<Employee[]> {
-    return defer(() => runInInjectionContext(this.envInjector, () => {
-      const colRef = collection(this.firestore, 'employee-hours');
-      const q = query(colRef, where('departmentId', '==', departmentId));
-      return from(getDocs(q)).pipe(
-        map(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) })) as Employee[])
-      );
-    }));
-    
+ getEmployeeHoursByDepartment(departmentId: string): Observable<Employee[]> {
+    if (!departmentId) {
+      return of([] as Employee[]);
+    }
+    const colRef = collection(this.firestore, 'employee-hours');
+    const q = query(colRef, where('departmentId', '==', departmentId));
+    return collectionData(q, { idField: 'id' }) as Observable<Employee[]>;
   }
 }
 
