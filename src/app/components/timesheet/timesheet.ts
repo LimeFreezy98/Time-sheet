@@ -1,4 +1,5 @@
-import {Component, inject, OnInit, Signal, WritableSignal, signal} from '@angular/core';
+// Don't forget these imports at the top!
+import {Component, inject, OnInit, WritableSignal, signal} from '@angular/core';
 import {Department} from '../../interfaces/department';
 import {DepartmentsService} from '../../services/departments';
 import {ActivatedRoute, Router} from '@angular/router';
@@ -8,7 +9,6 @@ import {AsyncPipe, JsonPipe, TitleCasePipe} from '@angular/common';
 import { FormControl, ValidatorFn, AbstractControl } from '@angular/forms';
 import {EmployeeService} from '../../services/employee';
 import {Observable, map, switchMap, tap} from 'rxjs';
-import {toSignal} from '@angular/core/rxjs-interop';
 @Component({
   selector: 'app-timesheet',
   imports: [MaterialModule, JsonPipe, TitleCasePipe, AsyncPipe],
@@ -103,17 +103,20 @@ export class Timesheet implements OnInit {
     return employee.monday + employee.tuesday + employee.wednesday
       + employee.thursday + employee.friday + employee.saturday + employee.sunday;
   }
-  deleteEmployee(index: number): void {
-    const list = this.employees();
-    if (!Array.isArray(list)) {
+  async deleteEmployee(index: number): Promise<void> {
+    const employee = this.employees()[index];
+    if (!employee)
       return;
+    
+    if (employee.id) {
+      await this.employeeService.deleteEmployeeHours(employee);
+
     }
-    if (index < 0 || index >= list.length) {
-      return;
-    }
-    const updated = list.slice();
+
+    const updated = this.employees().slice();
     updated.splice(index, 1);
     this.employees.set(updated);
+    this.employeeNameFC.updateValueAndValidity({ emitEvent: false });
   }
 
 
@@ -124,14 +127,21 @@ export class Timesheet implements OnInit {
     }
 
     try {
-      const ops = list.map(emp =>
-        emp.id ? this.employeeService.saveEmployeeHours(emp) : this.employeeService.saveEmployeeHours(emp)
-      );
+      const ops = list.map(emp => emp.id ? this.employeeService.updateEmployeeHours(emp)
+      : this.employeeService.saveEmployeeHours(emp) 
+    );
+
+      // const savePromises = list.map(emp => this.employeeService.saveEmployeeHours(emp));
+
+      // We'll add update logic in the next section
       await Promise.all(ops);
+
+      // await Promise.all(savePromises);
+
       // Navigate back to the departments page after successful saves
       await this.router.navigate(['./departments']);
     } catch (err) {
-      console.error('Error saving/updating employee hours', err);
+      console.error('Error saving employee hours', err);
       // Basic user feedback; in a real app, swap for a snackbar/toast service
       alert('Failed to submit employee hours. Please try again.');
     } finally {
@@ -139,3 +149,4 @@ export class Timesheet implements OnInit {
     }
   }
 }
+

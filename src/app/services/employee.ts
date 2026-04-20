@@ -2,7 +2,7 @@ import { inject, Injectable, EnvironmentInjector, runInInjectionContext } from '
 import { Employee } from '../interfaces/employee';
 import { Observable, defer, from, map, of } from 'rxjs';
 // AngularFire Firestore APIs (avoid mixing with raw Web SDK)
-import { Firestore, collection, addDoc, query, where, collectionData } from '@angular/fire/firestore';
+import { Firestore, collection, addDoc, query, where, collectionData, CollectionReference, doc, setDoc, deleteDoc} from '@angular/fire/firestore';
 
 /**
  * Service for handling all Employee data interactions with Cloud Firestore.
@@ -28,14 +28,15 @@ export class EmployeeService {
    * @param employee The Employee object to save.
    * @returns A Promise resolving when the save operation is complete.
    */
-  saveEmployeeHours(employee: Employee): Promise<any> {
-    return runInInjectionContext(this.envInjector, () => {
-      const colRef = collection(this.firestore, 'employee-hours');
-      return addDoc(colRef, employee);
-    });
-  }
+  async saveEmployeeHours(employee: Employee): Promise<void> {
+    return runInInjectionContext(this.envInjector, async () => {
+      const collectionRef = collection(this.firestore, 'employee-hours');
+      await addDoc(collectionRef, employee);
+    // });
+  });
+}
 
- getEmployeeHoursByDepartment(departmentId: string): Observable<Employee[]> {
+  getEmployeeHoursByDepartment(departmentId: string): Observable<Employee[]> {
     if (!departmentId) {
       return of([] as Employee[]);
     }
@@ -43,7 +44,21 @@ export class EmployeeService {
     const q = query(colRef, where('departmentId', '==', departmentId));
     return collectionData(q, { idField: 'id' }) as Observable<Employee[]>;
   }
+
+
+  async updateEmployeeHours(employee: Employee): Promise<void> {
+
+    const employeeDocRef = doc(this.firestore, 'employee-hours', employee.id!);
+
+    return await setDoc(employeeDocRef, employee);
+  }
+
+
+  async deleteEmployeeHours(employee: Employee): Promise<void> {
+
+    const docRef = doc(this.firestore, 'employee-hours', employee.id!);
+
+    return deleteDoc(docRef)
+  }
+
 }
-
-
-

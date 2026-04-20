@@ -18,12 +18,12 @@ import { Departments } from '../departments/departments';
 export class Analytics {
   private departmentsService: DepartmentsService = inject(DepartmentsService);
   departments$: Observable<Department[]> = this.departmentsService.getDepartments();
-  ngOnInit(): void {
-    this.departments$.subscribe( value => {
-      console.log(value)
-    })
+  // ngOnInit(): void {
+  //   this.departments$.subscribe( value => {
+  //     console.log(value)
+  //   })
 
-  }
+  // }
 }
 
 
